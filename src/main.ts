@@ -10,7 +10,6 @@ import * as path from 'path';
 
 import { startMysql } from '@config/mysql';
 import { PATH_LOGS, PORT } from '@constants/envData';
-import { normalizeDomain } from '@middleware/global.middleware';
 
 // Пути до логов для CORS и rate-limit
 const CORS_LOG_PATH = path.join(PATH_LOGS, 'cors_blocked.log');
@@ -30,7 +29,6 @@ async function bootstrap() {
 
   // 3. Получаем raw-инстанс Express для настройки middleware напрямую
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.use(normalizeDomain);
 
   // 4. Доверяем заголовкам прокси (нужно, если сервер работает за Nginx / Cloudflare и т.д.)
   expressApp.set('trust proxy', 1);
@@ -44,8 +42,8 @@ async function bootstrap() {
 
   // 7. CORS-логика: логируем заблокированные домены
   const allowedOrigins = [
-    '', // добавь нужные домены
-    '', // например: 'https://example.com'
+    'https://clubnika-casino725.online',
+    'https://www.clubnika-casino725.online',
   ];
 
   expressApp.use((req, res, next) => {
@@ -95,9 +93,11 @@ async function bootstrap() {
     slowDown({
       windowMs: 15 * 60 * 1000,
       delayAfter: 50,
-      delayMs: 500, // каждые следующие запросы задерживаются на 0.5 сек
+      delayMs: () => 500, // каждые следующие запросы задерживаются на 0.5 сек
     }),
   );
+
+  app.setGlobalPrefix('api');
 
   // 11. Запуск сервера на указанном порту
   await app.listen(PORT);

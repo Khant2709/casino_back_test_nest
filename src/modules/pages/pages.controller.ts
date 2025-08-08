@@ -2,17 +2,31 @@ import { Controller, Get, Param, Req, BadRequestException, NotFoundException } f
 import type { Request } from 'express';
 
 import { PagesService } from './pages.service';
-import { CasinoService } from '@modules/casino/casino.service';
-import { PageModel } from '@modules/pages/pages.model';
+import { PageModel, PageShortModel } from '@modules/pages/pages.model';
 
 
 @Controller('pages')
 export class PagesController {
-  constructor(
-    private readonly pagesService: PagesService,
-    private readonly casinoService: CasinoService,
-  ) {
+  constructor(private readonly pagesService: PagesService) {
   }
+  @Get('all')
+  async getAllPages(
+    @Req() req: Request,
+  ): Promise<{
+    data: PageShortModel[];
+    status: number;
+    message: string;
+  }> {
+    const casinoId = req.casinoId;
+
+    if(!casinoId) throw new BadRequestException('ID казино не определено');
+
+    const result = await this.pagesService.getAllPagesData(casinoId);
+    if (result.status !== 200 || !result?.data) throw new NotFoundException('Данные страниц не найдены');
+
+    return { data: result.data, status: result.status, message: 'Данные страниц успешно получены' };
+  }
+
 
   @Get('current/:page')
   async getCurrentPage(
@@ -23,14 +37,11 @@ export class PagesController {
     status: number;
     message: string;
   }> {
-    const domain = req.domain;
-    if (!domain) throw new BadRequestException('Домен не определен');
+    const casinoId = req.casinoId;
 
-    const resultCasinoId = await this.casinoService.getCasinoId(domain);
-    if (resultCasinoId?.status !== 200 || !resultCasinoId?.data?.[0]?.id) throw new NotFoundException('Казино не найдено');
-    const casinoId = resultCasinoId.data[0].id;
+    if(!casinoId) throw new BadRequestException('ID казино не определено');
 
-    const result = await this.pagesService.getCurrentPageData(casinoId, page);
+    const result = await this.pagesService.getCurrentPageData(casinoId, `/${page}`);
     if (result.status !== 200 || !result?.data?.[0]) throw new NotFoundException('Данные страницы не найдены');
 
     return { data: result.data[0], status: result.status, message: 'Данные страницы успешно получены' };

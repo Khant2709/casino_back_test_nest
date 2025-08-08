@@ -6,8 +6,8 @@ import { CasinoService } from '@modules/casino/casino.service';
 
 @Module({
   controllers: [PagesController],
-  providers: [PagesService],
-  imports: [CasinoService],
+  providers: [PagesService, CasinoService],
+  imports: [],
 })
 export class PagesModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

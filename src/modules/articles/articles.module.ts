@@ -5,9 +5,9 @@ import { validateParam } from '@middleware/global.middleware';
 import { CasinoService } from '@modules/casino/casino.service';
 
 @Module({
-  imports: [CasinoService],
+  imports: [],
   controllers: [ArticlesController],
-  providers: [ArticlesService],
+  providers: [ArticlesService, CasinoService],
 })
 export class ArticlesModule {
   configure(consumer: MiddlewareConsumer) {
