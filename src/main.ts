@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -98,6 +99,12 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true, // удаляет лишние поля, которых нет в DTO
+    forbidNonWhitelisted: true, // выдаёт ошибку, если пришли лишние поля
+    transform: false, // приводит типы (например, строки в числа)
+  }));
 
   // 11. Запуск сервера на указанном порту
   await app.listen(PORT);

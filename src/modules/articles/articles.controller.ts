@@ -1,12 +1,21 @@
 import {
-  Controller, Get, Param, Query, Req, BadRequestException, NotFoundException,
+  Controller,
+  UseGuards,
+  Param,
+  Query,
+  Body,
+  Req,
+  Post,
+  Get,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { ArticlesService } from './articles.service';
-import { CasinoService } from '@modules/casino/casino.service';
-import { GetAllArticlesDto } from '@modules/articles/articles.dto';
+import { CreateArticleDto, GetAllArticlesDto } from '@modules/articles/articles.dto';
 import { ArticleCardModel, ArticleModel } from '@modules/articles/articles.model';
+import { MakeKeyGuard } from '@middleware/global.middleware';
 
 
 @Controller('articles')
@@ -30,8 +39,6 @@ export class ArticlesController {
     message: string;
   }> {
     const casinoId = req.casinoId;
-    console.log('[REQ  ==== ] ', req.casinoId);
-    console.log('[CASINO ID  3 ==== ] ', casinoId);
     if (!casinoId) throw new BadRequestException('ID казино не определено');
 
     const page = query?.page ? Number(query.page) : undefined;
@@ -84,5 +91,21 @@ export class ArticlesController {
     if (result.status !== 200 || !result?.data?.[0]) throw new NotFoundException('Данные статьи не найдены');
 
     return { data: result.data[0], status: result.status, message: 'Данные статьи успешно получены' };
+  }
+
+  @Post('create')
+  @UseGuards(MakeKeyGuard)
+  async createArticle(
+    @Body() dto: CreateArticleDto,
+    @Req() req: Request,
+  ) {
+    const casinoId = req.casinoId;
+    if (!casinoId) throw new BadRequestException('ID казино не определено');
+
+    const result = await this.articlesService.createArticle(casinoId, dto);
+
+    if(result.status !== 200) throw new BadRequestException('Статья не создалась');
+
+    return {data: null, status: result.status, message: 'Статья успешно создалась'}
   }
 }

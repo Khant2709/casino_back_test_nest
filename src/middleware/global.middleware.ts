@@ -1,18 +1,26 @@
 import fs from 'fs';
 import path from 'path';
-import { Injectable, NestMiddleware, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  NotFoundException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException, BadRequestException,
+} from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 import { logSuspiciousSlug } from '@utils/suspiciousLogger';
 import { CasinoService } from '@modules/casino/casino.service';
-import { PATH_LOGS } from '@constants/envData';
+import { MAKE_KEY, PATH_LOGS } from '@constants/envData';
 
 const LOG_PATH = path.join(PATH_LOGS, 'domain_blocked.log');
 
 
 @Injectable()
 export class DomainMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {}
+  constructor(private readonly casinoService: CasinoService) {
+  }
 
   async use(req: Request, res: Response, next: NextFunction) {
     let host = req.hostname.toLowerCase();
@@ -40,6 +48,30 @@ export class DomainMiddleware implements NestMiddleware {
   }
 }
 
+@Injectable()
+export class CasinoIdMiddleware implements NestMiddleware {
+  constructor(private readonly casinoService: CasinoService) {
+  }
+
+  async use(req: Request, res: Response, next: NextFunction) {
+    let domain = req.body.domain.toLocaleString();
+
+    if (domain.startsWith('www.')) {
+      domain = domain.slice(4);
+    }
+
+    if (!domain) throw new BadRequestException('Домен казино не передан');
+
+    const resultCasinoId = await this.casinoService.getCasinoId(domain);
+    if (resultCasinoId?.status !== 200 || !resultCasinoId?.data?.[0]?.id) {
+      throw new NotFoundException('Казино не найдено');
+    }
+
+    req.casinoId = resultCasinoId.data[0].id;
+    next();
+  }
+}
+
 export const validateParam = (paramName: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const value = req.params[paramName];
@@ -60,3 +92,17 @@ export const validateParam = (paramName: string) => {
     next();
   };
 };
+
+@Injectable()
+export class MakeKeyGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<Request>();
+    const clientSecret = request.headers['x-make-secret'];
+
+    if (typeof clientSecret !== 'string' || clientSecret !== MAKE_KEY) {
+      throw new ForbiddenException('Недопустимый ключ доступа');
+    }
+
+    return true;
+  }
+}

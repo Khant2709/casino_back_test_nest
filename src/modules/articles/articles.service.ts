@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { executeQuery } from '@utils/dbExecuteQuery';
 import { ArticleCardModel, ArticleModel, CountModel } from '@modules/articles/articles.model';
+import { CreateArticleDto } from '@modules/articles/articles.dto';
 
 @Injectable()
 export class ArticlesService {
@@ -24,5 +25,27 @@ export class ArticlesService {
     return await executeQuery<ArticleModel[]>(
       'SELECT slug, title, content, meta_title, meta_description, keywords, date_update FROM articles WHERE casino_id = ? AND  slug = ?',
       [casinoId, slug]);
+  }
+
+  async createArticle(
+    casinoId: number,
+    dto: CreateArticleDto,
+  ) {
+    const query = `
+    INSERT INTO articles
+    (casino_id, slug, title, description, content, meta_title, meta_description, keywords)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+    return await executeQuery(query, [
+      casinoId,
+      dto.slug,
+      dto.title,
+      dto.description,
+      dto.content,
+      dto.meta_title,
+      dto.meta_description,
+      dto.keywords,
+    ], { isMutating: true });
   }
 }

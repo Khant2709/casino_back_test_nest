@@ -17,3 +17,5 @@ export const DB_USER = getEnv('DB_USER');
 export const DB_PASSWORD = getEnv('DB_PASSWORD');
 export const DB_DATABASE = getEnv('DB_DATABASE');
 export const PATH_LOGS = '/var/log/my_logs';
+
+export const MAKE_KEY = getEnv('MAKE_KEY');
