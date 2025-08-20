@@ -21,7 +21,9 @@ async function bootstrap() {
   try {
     await startMysql();
   } catch (err) {
-    console.error('🛑 Остановка запуска: не удалось подключиться к базе данных');
+    console.error(
+      '🛑 Остановка запуска: не удалось подключиться к базе данных',
+    );
     process.exit(1); // Прерываем запуск сервера
   }
 
@@ -50,7 +52,11 @@ async function bootstrap() {
   expressApp.use((req, res, next) => {
     const origin = req.headers.origin;
     if (origin && !allowedOrigins.includes(origin)) {
-      const ip = req?.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+      const ip =
+        req?.ip ||
+        req.headers['x-forwarded-for'] ||
+        req.socket.remoteAddress ||
+        'unknown';
       const ua = req.headers['user-agent'] || 'unknown';
       const logMessage = `[${new Date().toISOString()}] Blocked CORS request\nOrigin: ${origin}\nIP: ${ip}\nUser-Agent: ${ua}\nURL: ${req.originalUrl}\n\n`;
 
@@ -80,11 +86,17 @@ async function bootstrap() {
       windowMs: 15 * 60 * 1000, // 15 минут
       max: 100, // максимум 100 запросов за это время
       handler: (req, res) => {
-        const ip = req?.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const ip =
+          req?.ip ||
+          req.headers['x-forwarded-for'] ||
+          req.socket.remoteAddress ||
+          'unknown';
         const logMessage = `[${new Date().toISOString()}] Rate limit exceeded\nIP: ${ip}\nURL: ${req.originalUrl}\n\n`;
         fs.appendFile(RATE_LIMIT_LOG_PATH, logMessage, () => {});
         console.log(`[RATE LIMIT BLOCKED] IP: ${ip}, URL: ${req.originalUrl}`);
-        res.status(429).json({ message: 'Слишком много запросов. Повторите позже.' });
+        res
+          .status(429)
+          .json({ message: 'Слишком много запросов. Повторите позже.' });
       },
     }),
   );
@@ -100,11 +112,13 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // удаляет лишние поля, которых нет в DTO
-    forbidNonWhitelisted: true, // выдаёт ошибку, если пришли лишние поля
-    transform: false, // приводит типы (например, строки в числа)
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // удаляет лишние поля, которых нет в DTO
+      forbidNonWhitelisted: true, // выдаёт ошибку, если пришли лишние поля
+      transform: false, // приводит типы (например, строки в числа)
+    }),
+  );
 
   // 11. Запуск сервера на указанном порту
   await app.listen(PORT);

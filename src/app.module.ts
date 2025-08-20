@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod} from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 
 import { PagesModule } from '@modules/pages/pages.module';
 import { CasinoModule } from '@modules/casino/casino.module';
@@ -12,6 +17,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(DomainMiddleware)
+      //   //подумать, при криэйте падает ошибка что нет казино
       .forRoutes({ path: '*', method: RequestMethod.GET });
   }
 }

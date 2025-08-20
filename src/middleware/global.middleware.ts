@@ -6,7 +6,8 @@ import {
   NotFoundException,
   CanActivate,
   ExecutionContext,
-  ForbiddenException, BadRequestException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
@@ -16,20 +17,21 @@ import { MAKE_KEY, PATH_LOGS } from '@constants/envData';
 
 const LOG_PATH = path.join(PATH_LOGS, 'domain_blocked.log');
 
-
 @Injectable()
 export class DomainMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {
-  }
+  constructor(private readonly casinoService: CasinoService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     let host = req.hostname.toLowerCase();
+    console.log(123131231, host);
+
     if (host.startsWith('www.')) {
       host = host.slice(4);
     }
 
     req.domain = host;
     console.log('[DOMAIN ==== ] ', host);
+
     const resultCasinoId = await this.casinoService.getCasinoId(host);
     console.log('[CASINO ID ==== ] ', resultCasinoId);
     if (resultCasinoId?.status !== 200 || !resultCasinoId?.data?.[0]?.id) {
@@ -43,19 +45,17 @@ export class DomainMiddleware implements NestMiddleware {
     console.log('[CASINO ID  2 ==== ] ', resultCasinoId.data[0].id);
     req.casinoId = resultCasinoId.data[0].id;
 
-
     next();
   }
 }
 
 @Injectable()
 export class CasinoIdMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {
-  }
+  constructor(private readonly casinoService: CasinoService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     let domain = String(req.body.domain || '').trim();
-    domain = domain.toLowerCase()
+    domain = domain.toLowerCase();
 
     if (domain.startsWith('www.')) {
       domain = domain.slice(4);
@@ -84,9 +84,10 @@ export const validateParam = (paramName: string) => {
     ) {
       const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
       logSuspiciousSlug(String(ip), String(value));
-      res
-        .status(400)
-        .json({ status: 400, message: `Невалидный или слишком длинный параметр "${paramName}".` });
+      res.status(400).json({
+        status: 400,
+        message: `Невалидный или слишком длинный параметр "${paramName}".`,
+      });
       return;
     }
 

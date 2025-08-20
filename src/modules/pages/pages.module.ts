@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { PagesController } from './pages.controller';
 import { PagesService } from './pages.service';
-import { validateParam } from '@middleware/global.middleware';
+import { DomainMiddleware, validateParam } from '@middleware/global.middleware';
 import { CasinoService } from '@modules/casino/casino.service';
 
 @Module({
@@ -11,8 +11,8 @@ import { CasinoService } from '@modules/casino/casino.service';
 })
 export class PagesModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(validateParam('page'))
-      .forRoutes('pages/current/:page');
+    //странный момент DomainMiddleware не отрабатывал пока тут не добавили но в гварде был указан
+    consumer.apply(validateParam('page')).forRoutes('pages/current/:page');
+    consumer.apply(DomainMiddleware).forRoutes('pages/create');
   }
 }

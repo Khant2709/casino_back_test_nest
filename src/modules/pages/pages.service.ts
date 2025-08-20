@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { executeQuery } from '@utils/dbExecuteQuery';
 import { PageModel, PageShortModel } from './pages.model';
+import { PageDto } from './page.dto';
 
 @Injectable()
 export class PagesService {
   async getAllPagesData(casinoId: number) {
     const query = `SELECT page, title FROM pages WHERE casino_id = ?`;
-    return await executeQuery<PageShortModel[]>(query, [casinoId])
+    return await executeQuery<PageShortModel[]>(query, [casinoId]);
   }
 
   async getCurrentPageData(casinoId: number, page: string) {
@@ -16,5 +17,27 @@ export class PagesService {
       WHERE casino_id = ? AND page = ?
     `;
     return await executeQuery<PageModel[]>(query, [casinoId, page]);
+  }
+
+  async createPage(casinoId: number, dto: PageDto) {
+    const query = `
+      INSERT INTO pages
+      (casino_id, page, content, title, meta_title, meta_description, keywords)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    return await executeQuery(
+      query,
+      [
+        casinoId,
+        dto.content,
+        dto.page,
+        dto.title,
+        dto.keywords,
+        dto.meta_title,
+        dto.meta_description,
+      ],
+      { isMutating: true },
+    );
   }
 }

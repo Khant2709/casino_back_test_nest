@@ -1,7 +1,10 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { ArticlesController } from './articles.controller';
-import { CasinoIdMiddleware, validateParam } from '@middleware/global.middleware';
+import {
+  CasinoIdMiddleware,
+  validateParam,
+} from '@middleware/global.middleware';
 import { CasinoService } from '@modules/casino/casino.service';
 
 @Module({
