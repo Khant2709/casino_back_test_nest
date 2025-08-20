@@ -19,21 +19,21 @@ const LOG_PATH = path.join(PATH_LOGS, 'domain_blocked.log');
 
 @Injectable()
 export class DomainMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {}
+  constructor(private readonly casinoService: CasinoService) {
+  }
 
   async use(req: Request, res: Response, next: NextFunction) {
     let host = req.hostname.toLowerCase();
-    console.log(123131231, host);
 
     if (host.startsWith('www.')) {
       host = host.slice(4);
     }
 
     req.domain = host;
-    console.log('[DOMAIN ==== ] ', host);
+    // console.log('[DOMAIN ==== ] ', host);
 
     const resultCasinoId = await this.casinoService.getCasinoId(host);
-    console.log('[CASINO ID ==== ] ', resultCasinoId);
+    // console.log('[CASINO ID ==== ] ', resultCasinoId);
     if (resultCasinoId?.status !== 200 || !resultCasinoId?.data?.[0]?.id) {
       const logMessage = `[DomainMiddleware] Неизвестный домен: ${host}`;
       fs.appendFile(LOG_PATH, logMessage + '\n', (err) => {
@@ -42,7 +42,7 @@ export class DomainMiddleware implements NestMiddleware {
 
       throw new NotFoundException('Казино не найдено');
     }
-    console.log('[CASINO ID  2 ==== ] ', resultCasinoId.data[0].id);
+    // console.log('[CASINO ID  2 ==== ] ', resultCasinoId.data[0].id);
     req.casinoId = resultCasinoId.data[0].id;
 
     next();
@@ -51,7 +51,8 @@ export class DomainMiddleware implements NestMiddleware {
 
 @Injectable()
 export class CasinoIdMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {}
+  constructor(private readonly casinoService: CasinoService) {
+  }
 
   async use(req: Request, res: Response, next: NextFunction) {
     let domain = String(req.body.domain || '').trim();
@@ -67,7 +68,6 @@ export class CasinoIdMiddleware implements NestMiddleware {
     if (resultCasinoId?.status !== 200 || !resultCasinoId?.data?.[0]?.id) {
       throw new NotFoundException('Казино не найдено');
     }
-
     req.casinoId = resultCasinoId.data[0].id;
     next();
   }

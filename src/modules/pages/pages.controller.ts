@@ -13,7 +13,7 @@ import type { Request } from 'express';
 
 import { PagesService } from './pages.service';
 import { PageModel, PageShortModel } from '@modules/pages/pages.model';
-import { DomainMiddleware, MakeKeyGuard } from '@middleware/global.middleware';
+import { MakeKeyGuard } from '@middleware/global.middleware';
 import { PageDto } from './page.dto';
 
 @Controller('pages')
@@ -68,10 +68,9 @@ export class PagesController {
   }
 
   @Post('create')
-  @UseGuards(MakeKeyGuard, DomainMiddleware)
+  @UseGuards(MakeKeyGuard)
   async createArticle(@Body() dto: PageDto, @Req() req: Request) {
     const casinoId = req.casinoId;
-
     if (!casinoId) throw new BadRequestException('ID казино не определено');
 
     const result = await this.pagesService.createPage(casinoId, dto);

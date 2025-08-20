@@ -30,12 +30,12 @@ export class PagesService {
       query,
       [
         casinoId,
-        dto.content,
         dto.page,
+        dto.content,
         dto.title,
-        dto.keywords,
         dto.meta_title,
         dto.meta_description,
+        dto.keywords,
       ],
       { isMutating: true },
     );
