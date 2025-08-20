@@ -17,10 +17,15 @@ import { MAKE_KEY, PATH_LOGS } from '@constants/envData';
 
 const LOG_PATH = path.join(PATH_LOGS, 'domain_blocked.log');
 
+import {
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
+} from 'class-validator';
+
 @Injectable()
 export class DomainMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {
-  }
+  constructor(private readonly casinoService: CasinoService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     let host = req.hostname.toLowerCase();
@@ -30,7 +35,6 @@ export class DomainMiddleware implements NestMiddleware {
     }
 
     req.domain = host;
-    // console.log('[DOMAIN ==== ] ', host);
 
     const resultCasinoId = await this.casinoService.getCasinoId(host);
     // console.log('[CASINO ID ==== ] ', resultCasinoId);
@@ -51,8 +55,7 @@ export class DomainMiddleware implements NestMiddleware {
 
 @Injectable()
 export class CasinoIdMiddleware implements NestMiddleware {
-  constructor(private readonly casinoService: CasinoService) {
-  }
+  constructor(private readonly casinoService: CasinoService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     let domain = String(req.body.domain || '').trim();
@@ -107,4 +110,25 @@ export class MakeKeyGuard implements CanActivate {
 
     return true;
   }
+}
+
+export function IsDateTimeString(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isDateTimeString',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          console.log(value);
+          
+          return (
+            typeof value === 'string' &&
+            /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+          );
+        },
+      },
+    });
+  };
 }

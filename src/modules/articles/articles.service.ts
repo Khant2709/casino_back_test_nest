@@ -39,8 +39,8 @@ export class ArticlesService {
   async createArticle(casinoId: number, dto: CreateArticleDto) {
     const query = `
     INSERT INTO articles
-    (casino_id, slug, title, description, content, meta_title, meta_description, keywords)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (casino_id, slug, title, description, content, meta_title, meta_description, keywords, available_from)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
     return await executeQuery(
@@ -54,6 +54,7 @@ export class ArticlesService {
         dto.meta_title,
         dto.meta_description,
         dto.keywords,
+        dto.available_from ? dto.available_from : null,
       ],
       { isMutating: true },
     );

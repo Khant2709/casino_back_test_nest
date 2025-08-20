@@ -1,3 +1,4 @@
+import { IsDateTimeString } from '@middleware/global.middleware';
 import {
   IsString,
   IsNotEmpty,
@@ -7,8 +8,12 @@ import {
   Validate,
   IsOptional,
   IsNumberString,
+  IsDateString,
 } from 'class-validator';
-import { ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
+import {
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator';
 
 export class GetAllArticlesDto {
   @IsOptional()
@@ -63,10 +68,18 @@ export class CreateArticleDto {
 
   @IsString({ message: 'meta_description должен быть строкой' })
   @IsNotEmpty({ message: 'meta_description обязателен' })
-  @Length(150, 180, { message: 'meta_description должен быть от 150 до 180 символов' })
+  @Length(150, 180, {
+    message: 'meta_description должен быть от 150 до 180 символов',
+  })
   meta_description: string;
 
   @IsString({ message: 'keywords должен быть строкой' })
   @IsNotEmpty({ message: 'keywords обязателен' })
   keywords: string;
+
+  @IsDateTimeString({
+    message: 'Дата должна быть в формате YYYY-MM-DD HH:mm:ss',
+  })
+  @IsOptional()
+  available_from: string;
 }
