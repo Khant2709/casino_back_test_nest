@@ -54,7 +54,8 @@ export class CasinoIdMiddleware implements NestMiddleware {
   }
 
   async use(req: Request, res: Response, next: NextFunction) {
-    let domain = req.body.domain.toLocaleString();
+    let domain = String(req.body.domain || '').trim();
+    domain = domain.toLowerCase()
 
     if (domain.startsWith('www.')) {
       domain = domain.slice(4);

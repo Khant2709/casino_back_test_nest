@@ -1,8 +1,22 @@
-import { IsString, IsNotEmpty, Length, MaxLength, MinLength, Validate } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Length,
+  MaxLength,
+  MinLength,
+  Validate,
+  IsOptional,
+  IsNumberString,
+} from 'class-validator';
 import { ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 
 export class GetAllArticlesDto {
+  @IsOptional()
+  @IsNumberString({}, { message: 'page должно быть числом' })
   page?: string;
+
+  @IsOptional()
+  @IsNumberString({}, { message: 'limit должно быть числом' })
   limit?: string;
 }
 
