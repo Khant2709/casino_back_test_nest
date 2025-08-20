@@ -1,20 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { executeQuery } from '@utils/dbExecuteQuery';
-import { ArticleCardModel, ArticleModel, CountModel } from '@modules/articles/articles.model';
+import {
+  ArticleCardModel,
+  ArticleModel,
+  CountModel,
+} from '@modules/articles/articles.model';
 import { CreateArticleDto } from '@modules/articles/articles.dto';
 
 @Injectable()
 export class ArticlesService {
   async getCountArticles(casinoId: number) {
-    const query = 'SELECT COUNT(*) as total FROM articles WHERE casino_id = ?';
+    const query =
+      'SELECT COUNT(*) as total FROM articles WHERE casino_id = ? AND (available_from IS NULL OR available_from <= NOW())';
     return await executeQuery<CountModel[]>(query, [casinoId]);
   }
 
   async getArticles(casinoId: number, limit?: number, offset?: number) {
-    const baseQuery = `SELECT slug, title, description FROM articles WHERE casino_id = ? ORDER BY date_update DESC`;
+    const baseQuery = `SELECT slug, title, description FROM articles WHERE casino_id = ? AND (available_from IS NULL OR available_from <= NOW())
+      ORDER BY date_update DESC`;
 
     const paginationClause =
-      limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : '';
+      limit !== undefined && offset !== undefined
+        ? `LIMIT ${limit} OFFSET ${offset}`
+        : '';
 
     const query = `${baseQuery} ${paginationClause};`;
 
@@ -23,29 +31,31 @@ export class ArticlesService {
 
   async getArticle(casinoId: number, slug: string) {
     return await executeQuery<ArticleModel[]>(
-      'SELECT slug, title, content, meta_title, meta_description, keywords, date_update FROM articles WHERE casino_id = ? AND  slug = ?',
-      [casinoId, slug]);
+      'SELECT slug, title, content, meta_title, meta_description, keywords, date_update FROM articles WHERE casino_id = ? AND  slug = ? AND (available_from IS NULL OR available_from <= NOW())',
+      [casinoId, slug],
+    );
   }
 
-  async createArticle(
-    casinoId: number,
-    dto: CreateArticleDto,
-  ) {
+  async createArticle(casinoId: number, dto: CreateArticleDto) {
     const query = `
     INSERT INTO articles
     (casino_id, slug, title, description, content, meta_title, meta_description, keywords)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-    return await executeQuery(query, [
-      casinoId,
-      dto.slug,
-      dto.title,
-      dto.description,
-      dto.content,
-      dto.meta_title,
-      dto.meta_description,
-      dto.keywords,
-    ], { isMutating: true });
+    return await executeQuery(
+      query,
+      [
+        casinoId,
+        dto.slug,
+        dto.title,
+        dto.description,
+        dto.content,
+        dto.meta_title,
+        dto.meta_description,
+        dto.keywords,
+      ],
+      { isMutating: true },
+    );
   }
 }
