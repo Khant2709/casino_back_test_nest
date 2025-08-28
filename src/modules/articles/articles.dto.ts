@@ -8,7 +8,7 @@ import {
   Validate,
   IsOptional,
   IsNumberString,
-  IsDateString,
+  Matches,
 } from 'class-validator';
 import {
   ValidatorConstraint,
@@ -44,6 +44,9 @@ export class CreateArticleDto {
   @IsString({ message: 'Slug должен быть строкой' })
   @IsNotEmpty({ message: 'Slug обязателен' })
   @Length(3, 40, { message: 'Slug должен быть от 3 до 40 символов' })
+  @Matches(/^[a-zA-Z_-]+$/, {
+    message: 'Slug может содержать только английские буквы, "-" и "_"',
+  })
   slug: string;
 
   @IsString({ message: 'title должен быть строкой' })
