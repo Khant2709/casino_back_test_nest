@@ -63,6 +63,7 @@ export class ArticlesController {
     );
     if (!resultArticles?.data)
       throw new NotFoundException('Данные статей не найдены');
+    console.log('[ARTICLES] ====== ', resultArticles.data);
 
     let totalPages;
     let totalItems;
