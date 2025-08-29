@@ -11,6 +11,7 @@ import * as path from 'path';
 
 import { startMysql } from '@config/mysql';
 import { PATH_LOGS, PORT } from '@constants/envData';
+import { ALLOWED_ORIGINS } from '@constants/allowedOrigins';
 
 // Пути до логов для CORS и rate-limit
 const CORS_LOG_PATH = path.join(PATH_LOGS, 'cors_blocked.log');
@@ -44,10 +45,7 @@ async function bootstrap() {
   expressApp.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // 7. CORS-логика: логируем заблокированные домены
-  const allowedOrigins = [
-    'https://clubnika-casino725.online',
-    'https://www.clubnika-casino725.online',
-  ];
+  const allowedOrigins = ALLOWED_ORIGINS;
 
   expressApp.use((req, res, next) => {
     const origin = req.headers.origin;
