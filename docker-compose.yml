@@ -1,0 +1,149 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: node_api
+    ports:
+      - "${PORT}"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:${DB_PORT}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  phpmyadmin:
+      image: phpmyadmin/phpmyadmin:latest
+      container_name: phpmyadmin
+      depends_on:
+        - mysql
+      environment:
+        PMA_HOST: mysql
+        PMA_PORT: ${DB_PORT}
+        PMA_ARBITRARY: 0
+      ports:
+        - "8081:80"
+      healthcheck:
+        test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 20s
+      restart: unless-stopped
+
+  docker-events-watcher:
+      image: alpine:3.20
+      container_name: docker_events_watcher
+      restart: unless-stopped
+      environment:
+        TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+        TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+      command: |
+        sh -c '
+          apk add --no-cache curl docker-cli jq coreutils tzdata
+          export TZ=Europe/Moscow
+
+          START_TIME=$(date +%s)
+          GRACE_PERIOD=90
+
+          docker events --format "{{json .}}" --filter "type=container" |
+          while read event; do
+
+            ACTION=$(echo "$$event" | jq -r .Action)
+            PROJECT=$(echo "$$event" | jq -r ".Actor.Attributes.\"com.docker.compose.project\" // \"standalone\"")
+            SERVICE=$(echo "$$event" | jq -r ".Actor.Attributes.\"com.docker.compose.service\" // \"unknown\"")
+            CONTAINER=$(echo "$$event" | jq -r .Actor.Attributes.name)
+            EXIT=$(echo "$$event" | jq -r ".Actor.Attributes.exitCode // empty")
+            TS=$(echo "$$event" | jq -r .time)
+            TIME=$(date -d "@$$TS" -Iseconds)
+
+            NOW=$(date +%s)
+            UPTIME=$((NOW - START_TIME))
+
+            if [ "$$ACTION" = "die" ]; then
+
+              # ⛔ подавляем стартап-шум API
+              if [ "$$SERVICE" = "api" ] && [ "$$UPTIME" -lt "$$GRACE_PERIOD" ]; then
+                continue
+              fi
+
+              if [ "$$EXIT" = "0" ]; then
+                ICON="🛑"
+                TITLE="Container stopped"
+                REASON="Stopped manually or gracefully"
+              elif [ "$$EXIT" = "137" ]; then
+                ICON="🛑"
+                TITLE="Container killed"
+                REASON="docker stop or OOM kill"
+              else
+                ICON="❌"
+                TITLE="Container crashed"
+                REASON="Exited with error"
+              fi
+
+              MESSAGE=$(printf "%s *%s*\nProject: %s\nService: %s\nContainer: %s\nExit code: %s\nReason: %s\nTime: %s" \
+                "$$ICON" "$$TITLE" "$$PROJECT" "$$SERVICE" "$$CONTAINER" "$$EXIT" "$$REASON" "$$TIME")
+
+            elif [ "$$ACTION" = "start" ]; then
+              ICON="✅"
+              MESSAGE=$(printf "%s *Container started*\nProject: %s\nService: %s\nContainer: %s\nTime: %s" \
+                "$$ICON" "$$PROJECT" "$$SERVICE" "$$CONTAINER" "$$TIME")
+
+            elif echo "$$ACTION" | grep -q health_status; then
+              STATUS=$(echo "$$ACTION" | cut -d: -f2)
+
+              if [ "$$STATUS" = "unhealthy" ]; then
+                ICON="⚠️"
+                TITLE="Container unhealthy"
+              else
+                ICON="✅"
+                TITLE="Container healthy"
+              fi
+
+              MESSAGE=$(printf "%s *%s*\nProject: %s\nService: %s\nContainer: %s\nTime: %s" \
+                "$$ICON" "$$TITLE" "$$PROJECT" "$$SERVICE" "$$CONTAINER" "$$TIME")
+            else
+              continue
+            fi
+
+            curl -s -X POST \
+              "https://api.telegram.org/bot$${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d "chat_id=$${TELEGRAM_CHAT_ID}" \
+              -d "parse_mode=Markdown" \
+              --data-urlencode "text=$$MESSAGE"
+          done
+        '
+
+volumes:
+  mysql_data:
