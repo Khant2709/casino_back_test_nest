@@ -81,8 +81,17 @@ async function bootstrap() {
   // 9. Ограничение количества запросов с одного IP (защита от спама/атаки)
   expressApp.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 минут
-      max: 100, // максимум 100 запросов за это время
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      skip: (req) => {
+        const ip = req.ip || '';
+        // исключаем локальные IP (IPv4, IPv6, ::ffff)
+        return (
+          ip === '127.0.0.1' ||
+          ip === '::1' ||
+          ip === '::ffff:127.0.0.1'
+        );
+      },
       handler: (req, res) => {
         const ip =
           req?.ip ||
